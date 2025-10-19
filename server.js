@@ -2,8 +2,8 @@ const http = require('http');
 const mysql = require('mysql2');
 require('dotenv').config();
 
-const HOST = 'localhost';
-const PORT = 8001;
+const HOST = process.env.VITE_BACKENDß;
+const PORT = process.env.VITE_PORT || 8000;
 const DB_NAME = 'node_patient_db';
 const TABLE_NAME = 'patients';
 
@@ -198,7 +198,7 @@ const server = http.createServer((req, res) => {
                 return;
             }
         } else if (req.method === 'GET') {
-            const urlParts = new URL(req.url, `http://${HOST}:${PORT}`);
+            const urlParts = new URL(req.url, `http://${HOST}`);
             sqlQuery = urlParts.searchParams.get('query');
         }
 
@@ -259,8 +259,8 @@ function sendError(res, statusCode, message, type = 'SERVER ERROR') {
 }
 
 
-server.listen(PORT, HOST, () => {
-    console.log(`Node.js Database Server (Origin 2) running at http://${HOST}:${PORT}/`);
+server.listen(PORT, () => {
+    console.log(`Node.js Database Server (Origin 2) running at http://${HOST}/`);
     console.log(`Ensure your client (Origin 1) is accessing this from a different host/port for proper CORS testing.`);
 });
 
