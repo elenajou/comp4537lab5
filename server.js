@@ -131,15 +131,6 @@ function processStructuredInsert(res, name, dateOfBirth) {
           sendError(res, 500, `Database Error: ${err.message}`, 'DB ERROR');
           return;
       }
-      console.log("no error");
-      const response = { 
-          success: true, 
-          message: `Successfully inserted patient '${name}' with date '${dateOfBirth}'. Rows affected: ${results.affectedRows}.`,
-          insertId: results.insertId
-      };
-      console.log(response);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(response));
   }, values);
 }
 
@@ -164,17 +155,32 @@ const server = http.createServer((req, res) => {
 
       if (url === '/insert-data' && req.method === 'POST') {
           try {
-              const data = JSON.parse(body);
-              const name = data.name;
-              const date = data.dateOfBirth; 
-
-              if (!name || !date) {
-                  sendError(res, 400, "Missing name or date.", 'INPUT ERROR');
-                  return;
-              }
-
-              processStructuredInsert(res, name, date);
+              const incomingData = JSON.parse(body);
               
+              if (!Array.isArray(incomingData) || incomingData.length === 0) {
+                sendError(res, 400, "Expected a non-empty array of patient records.", 'INPUT ERROR');
+                return;
+              }
+              
+              const patientRecords = incomingData.map(record => {
+                  const name = record.name;
+                  const date = record.dateOfBirth; // Use dateOfBirth from client JSON
+
+                  if (!name || !date) {
+                        throw new Error("Each record must contain 'name' and 'dateOfBirth'.");
+                  }
+                  processStructuredInsert(res, name, date);
+                  return { name, date }; 
+              });
+              
+              const response = { 
+                success: true, 
+                message: `Successfully inserted ${incomingData.length} patients.`,
+              };
+              
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify(response));
+              console.log(`[SERVER] Received Bulk Insert Request for ${patientRecords.length} records.`);
           } catch (e) {
               sendError(res, 400, "Invalid JSON body for structured insert.", 'JSON ERROR');
           }
